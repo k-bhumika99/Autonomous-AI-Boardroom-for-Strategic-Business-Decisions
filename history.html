@@ -1,0 +1,68 @@
+{% extends "base_app.html" %}
+{% set active_page = 'history' %}
+{% block title %}History — Autonomous AI Boardroom{% endblock %}
+{% block app_content %}
+
+<div class="page-header">
+  <div>
+    <span class="eyebrow">Every session</span>
+    <h1>🕘 Decision History</h1>
+  </div>
+  <a href="{{ url_for('main.new_decision') }}" class="btn btn-primary btn-sm">➕ New Decision</a>
+</div>
+
+<div class="glass card">
+  {% if scenarios %}
+  <table>
+    <thead><tr><th>Decision</th><th>Investment</th><th>Score</th><th>Recommendation</th><th>Sign-off</th><th>Date</th><th style="min-width:180px; text-align:right;">Actions</th></tr></thead>
+    <tbody>
+      {% for s in scenarios %}
+      <tr>
+        <td><b>{{ s.title }}</b></td>
+        <td>₹{{ s.investment | inr }}</td>
+        <td>{% if s.decision %}{{ s.decision.weighted_score }}/100{% else %}—{% endif %}</td>
+        <td>
+          {% if s.decision %}
+            {% set rec = s.decision.final_recommendation %}
+            <span class="badge {{ 'badge-strong' if rec=='STRONGLY RECOMMEND' else 'badge-conditions' if 'CONDITIONS' in rec else 'badge-review' if 'REVIEW' in rec else 'badge-reject' if 'NOT' in rec else 'badge-recommend' }}">{{ rec }}</span>
+          {% else %}
+            <span class="badge badge-review">{{ s.status | upper }}</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if s.decision %}
+            {% set label, cls, icon = s.decision.approval_label %}
+            <span class="badge {{ cls }}">{{ icon }} {{ label }}</span>
+          {% else %}—{% endif %}
+        </td>
+        <td>{{ s.created_at.strftime('%d %b %Y') }}</td>
+        <td>
+          <div style="display:flex; gap:8px; align-items:center; justify-content:flex-end;">
+            {% if s.status in ['pending', 'running'] %}
+              <a href="{{ url_for('main.boardroom_execution', scenario_id=s.id) }}" class="btn btn-secondary btn-sm">Run →</a>
+            {% else %}
+              <a href="{{ url_for('main.report_page', scenario_id=s.id) }}" class="btn btn-secondary btn-sm">Report →</a>
+            {% endif %}
+            <form method="POST" action="{{ url_for('main.delete_scenario', scenario_id=s.id) }}"
+                  onsubmit="return confirm('Are you sure you want to delete &quot;{{ s.title }}&quot;? This cannot be undone.');"
+                  style="display:inline; margin:0;">
+              <button type="submit" class="btn btn-danger btn-sm" title="Delete Decision"
+                      style="display:inline-flex; align-items:center; gap:4px; cursor:pointer;">
+                🗑️ Delete
+              </button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">
+    <span class="emoji">🗂️</span>
+    <p>No decisions yet.</p>
+    <a href="{{ url_for('main.new_decision') }}" class="btn btn-primary">➕ Create New Decision</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

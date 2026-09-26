@@ -1,0 +1,54 @@
+{% extends "base_app.html" if user else "base.html" %}
+{% block title %}Ask {{ agent.name }} ({{ agent.role }}) — AI Boardroom Chatbot{% endblock %}
+
+{% block body %}
+{% if not user %}
+  <!-- Public Top Navbar if visitor not logged in -->
+  <header class="navbar">
+    <div class="container">
+      <a href="/" class="brand-wrapper">
+        <div class="brand-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2 9L12 3L22 9V11H2V9Z" fill="#18A879"/>
+            <rect x="4" y="12" width="2.5" height="7" rx="0.5" fill="#18A879"/>
+            <rect x="9" y="12" width="2.5" height="7" rx="0.5" fill="#18A879"/>
+            <rect x="13.5" y="12" width="2.5" height="7" rx="0.5" fill="#18A879"/>
+            <rect x="18" y="12" width="2.5" height="7" rx="0.5" fill="#18A879"/>
+            <path d="M2 20H22V22H2V20Z" fill="#18A879"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">AI Boardroom</span>
+          <span class="brand-subtitle">Multi-Agent Decision Intelligence</span>
+        </div>
+      </a>
+      <nav>
+        <ul class="nav-links">
+          <li class="nav-item"><a href="/">Home</a></li>
+          <li class="nav-item"><a href="/features">Features</a></li>
+          <li class="nav-item"><a href="/how-it-works">How It Works</a></li>
+          <li class="nav-item active"><a href="/agents">Agents</a></li>
+          <li class="nav-item"><a href="/about">About</a></li>
+          <li class="nav-item"><a href="/contact">Contact</a></li>
+        </ul>
+      </nav>
+      <div class="nav-actions">
+        <a href="/signin" class="btn btn-signin">Sign In</a>
+        <a href="/signup" class="btn btn-signup">Sign Up</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content" style="padding: 24px 0 60px;">
+    <div class="container">
+      {% include "partials/agent_chat_content.html" %}
+    </div>
+  </main>
+{% else %}
+  {{ super() }}
+{% endif %}
+{% endblock %}
+
+{% block app_content %}
+  {% include "partials/agent_chat_content.html" %}
+{% endblock %}

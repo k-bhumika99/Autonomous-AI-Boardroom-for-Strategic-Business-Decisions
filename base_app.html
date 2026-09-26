@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="app-shell">
+  <aside class="sidebar glass">
+    <div class="brand" style="display:flex; align-items:center; gap:10px; padding:0 10px 20px 10px;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2 9L12 3L22 9V11H2V9Z" fill="#18A879"/>
+        <rect x="4" y="12" width="2.5" height="7" rx="0.5" fill="#18A879"/>
+        <rect x="9" y="12" width="2.5" height="7" rx="0.5" fill="#18A879"/>
+        <rect x="13.5" y="12" width="2.5" height="7" rx="0.5" fill="#18A879"/>
+        <rect x="18" y="12" width="2.5" height="7" rx="0.5" fill="#18A879"/>
+        <path d="M2 20H22V22H2V20Z" fill="#18A879"/>
+      </svg>
+      <span style="font-weight:700; color:#123F3D; font-size:1.15rem; letter-spacing:-0.01em;">AI Boardroom</span>
+    </div>
+    <nav>
+      <ul>
+        <li><a class="side-link {{ 'active' if active_page=='dashboard' }}" href="{{ url_for('main.dashboard') }}"><span class="emoji">📊</span> Dashboard</a></li>
+        <li><a class="side-link {{ 'active' if active_page=='agents' }}" href="{{ url_for('main.agents_hub') }}"><span class="emoji">🤖</span> Agents</a></li>
+        <li><a class="side-link {{ 'active' if active_page=='new_decision' }}" href="{{ url_for('main.new_decision') }}"><span class="emoji">➕</span> New Decision</a></li>
+
+        <li class="divider" style="margin:10px 6px;"></li>
+        <li style="padding: 4px 12px; font-size: 0.70rem; font-weight: 700; text-transform: uppercase; color: #8F9E9B; letter-spacing: 0.05em;">Boardroom Deliberation</li>
+        <li><a class="side-link {{ 'active' if active_page=='planner' }}" href="{{ url_for('main.plan_page', scenario_id=scenario.id) if scenario else url_for('main.plan_direct') }}"><span class="emoji">🧭</span> Plan</a></li>
+        <li><a class="side-link {{ 'active' if active_page=='finance' }}" href="{{ url_for('main.finance_page', scenario_id=scenario.id) if scenario else url_for('main.finance_direct') }}"><span class="emoji">💰</span> Finance</a></li>
+        <li><a class="side-link {{ 'active' if active_page=='marketing' }}" href="{{ url_for('main.marketing_page', scenario_id=scenario.id) if scenario else url_for('main.marketing_direct') }}"><span class="emoji">📣</span> Marketing</a></li>
+        <li><a class="side-link {{ 'active' if active_page=='operations' }}" href="{{ url_for('main.operations_page', scenario_id=scenario.id) if scenario else url_for('main.operations_direct') }}"><span class="emoji">⚙️</span> Operations</a></li>
+        <li><a class="side-link {{ 'active' if active_page=='risk' }}" href="{{ url_for('main.risk_page', scenario_id=scenario.id) if scenario else url_for('main.risk_direct') }}"><span class="emoji">⚠️</span> Risk</a></li>
+        <li><a class="side-link {{ 'active' if active_page=='debate' }}" href="{{ url_for('main.debate_page', scenario_id=scenario.id) if scenario else url_for('main.debate_direct') }}"><span class="emoji">🗣️</span> Debate</a></li>
+        <li><a class="side-link {{ 'active' if active_page=='ceo' }}" href="{{ url_for('main.ceo_page', scenario_id=scenario.id) if scenario else url_for('main.ceo_direct') }}"><span class="emoji">👔</span> CEO &amp; Approval</a></li>
+        <li><a class="side-link {{ 'active' if active_page=='report' }}" href="{{ url_for('main.report_page', scenario_id=scenario.id) if scenario else url_for('main.report_direct') }}"><span class="emoji">📜</span> Report</a></li>
+        <li><a class="side-link {{ 'active' if active_page=='whatif' }}" href="{{ url_for('main.what_if_page', scenario_id=scenario.id) if scenario else url_for('main.what_if_direct') }}"><span class="emoji">🔮</span> What-If</a></li>
+
+        <li class="divider" style="margin:10px 6px;"></li>
+        <li><a class="side-link {{ 'active' if active_page=='history' }}" href="{{ url_for('main.history') }}"><span class="emoji">🕘</span> History</a></li>
+        <li><a class="side-link {{ 'active' if active_page=='settings' }}" href="{{ url_for('main.settings') }}"><span class="emoji">🛠️</span> Settings</a></li>
+      </ul>
+    </nav>
+    <div class="sidebar-footer">
+      <a class="side-link" href="{{ url_for('auth.logout') }}"><span class="emoji">🚪</span> Logout</a>
+    </div>
+  </aside>
+
+  <main class="main-area">
+    {% block app_content %}{% endblock %}
+  </main>
+</div>
+{% endblock %}

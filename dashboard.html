@@ -1,0 +1,179 @@
+{% extends "base_app.html" %}
+{% set active_page = 'dashboard' %}
+{% block title %}Dashboard — Autonomous AI Boardroom{% endblock %}
+{% block app_content %}
+
+<div class="glass greeting-card">
+  <div>
+    <h2>{{ greeting_emoji }} {{ greeting }}, {{ user.name }}!</h2>
+    <p>Ready to bring your next big decision to the boardroom? 🏛️</p>
+  </div>
+  <div style="display:flex; align-items:center; gap:16px;">
+    <span class="greeting-wave">👋</span>
+    <a href="{{ url_for('main.new_decision') }}" class="btn btn-primary">➕ New Decision</a>
+  </div>
+</div>
+
+{% if pending_approvals %}
+<div class="callout warn" style="margin-bottom:20px;">
+  <b>🖋️ {{ pending_approvals | length }} decision{{ 's' if pending_approvals | length > 1 }} waiting on your sign-off:</b>
+  {% for s in pending_approvals[:4] %}
+    <a href="{{ url_for('main.ceo_page', scenario_id=s.id) }}" class="chip">{{ s.title }}</a>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="grid grid-4" style="margin-bottom: 22px;">
+  <div class="glass stat-card">
+    <span class="stat-emoji">📁</span>
+    <span class="stat-value">{{ total_decisions }}</span>
+    <span class="stat-label">TOTAL DECISIONS</span>
+  </div>
+  <div class="glass stat-card">
+    <span class="stat-emoji">✅</span>
+    <span class="stat-value">{{ completed_count }}</span>
+    <span class="stat-label">COMPLETED ANALYSES</span>
+  </div>
+  <div class="glass stat-card">
+    <span class="stat-emoji">🎯</span>
+    <span class="stat-value">{{ avg_score if avg_score is not none else "—" }}</span>
+    <span class="stat-label">AVG STRATEGIC SCORE</span>
+  </div>
+  <div class="glass stat-card">
+    <span class="stat-emoji">💰</span>
+    <span class="stat-value" style="font-size:1.3rem;">₹{{ analytics.total_investment | inr_short }}</span>
+    <span class="stat-label">CAPITAL UNDER REVIEW</span>
+  </div>
+</div>
+
+{% if analytics.count %}
+<div class="grid grid-2" style="align-items:start;">
+  <div class="glass card chart-card">
+    <h4>📈 Strategic Score by Decision</h4>
+    <p class="chart-sub">Every completed boardroom session, oldest first.</p>
+    <div class="chart-box"><canvas id="dash-scores"></canvas></div>
+  </div>
+  <div class="glass card chart-card">
+    <h4>🥧 Recommendation Mix</h4>
+    <p class="chart-sub">What the board concluded across your portfolio.</p>
+    <div class="chart-box"><canvas id="dash-recs"></canvas></div>
+  </div>
+</div>
+
+<div class="grid grid-2" style="margin-top:18px; align-items:start;">
+  <div class="glass card chart-card">
+    <h4>💸 Investment vs Expected Revenue</h4>
+    <div class="chart-box"><canvas id="dash-money"></canvas></div>
+  </div>
+  <div class="glass card chart-card">
+    <h4>🕸️ Average Agent Scores</h4>
+    <p class="chart-sub">Where your ideas consistently score well — and where they don't.</p>
+    <div class="chart-box"><canvas id="dash-radar"></canvas></div>
+  </div>
+</div>
+
+<div class="grid grid-2" style="margin-top:18px; align-items:start;">
+  <div class="glass card chart-card">
+    <h4>⚠️ Risk Severity Across Portfolio</h4>
+    <p class="chart-sub">Every risk flagged by the CRO, pooled across all your decisions.</p>
+    <div class="chart-box short"><canvas id="dash-severity"></canvas></div>
+  </div>
+  <div class="glass card chart-card">
+    <h4>🗂️ Risk Categories</h4>
+    <p class="chart-sub">Which kind of risk keeps showing up in your ideas.</p>
+    <div class="chart-box short"><canvas id="dash-categories"></canvas></div>
+  </div>
+</div>
+{% endif %}
+
+<div class="glass card" style="margin-top:18px;">
+  <div class="page-header" style="margin-bottom:10px;">
+    <h3>🕘 Recent Decisions</h3>
+    <a href="{{ url_for('main.history') }}" class="btn btn-ghost btn-sm">View all →</a>
+  </div>
+
+  {% if scenarios %}
+  <table>
+    <thead><tr><th>Decision</th><th>Score</th><th>Recommendation</th><th>Sign-off</th><th>Date</th><th></th></tr></thead>
+    <tbody>
+      {% for s in scenarios %}
+      <tr>
+        <td>{{ s.title }}</td>
+        <td>{% if s.decision %}{{ s.decision.weighted_score }}/100{% else %}—{% endif %}</td>
+        <td>
+          {% if s.decision %}
+            {% set rec = s.decision.final_recommendation %}
+            <span class="badge {{ 'badge-strong' if rec=='STRONGLY RECOMMEND' else 'badge-conditions' if 'CONDITIONS' in rec else 'badge-review' if 'REVIEW' in rec else 'badge-reject' if 'NOT' in rec else 'badge-recommend' }}">{{ rec }}</span>
+          {% else %}
+            <span class="badge badge-review">{{ s.status | upper }}</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if s.decision %}
+            {% set label, cls, icon = s.decision.approval_label %}
+            <span class="badge {{ cls }}">{{ icon }} {{ label }}</span>
+          {% else %}—{% endif %}
+        </td>
+        <td>{{ s.created_at.strftime('%d %b %Y') }}</td>
+        <td>
+          {% if s.status in ['pending', 'running'] %}
+            <a href="{{ url_for('main.boardroom_execution', scenario_id=s.id) }}" class="btn btn-secondary btn-sm">View →</a>
+          {% else %}
+            <a href="{{ url_for('main.report_page', scenario_id=s.id) }}" class="btn btn-secondary btn-sm">View →</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">
+    <span class="emoji">🗂️</span>
+    <p>No decisions yet. Start your first AI boardroom session!</p>
+    <a href="{{ url_for('main.new_decision') }}" class="btn btn-primary">➕ Create New Decision</a>
+  </div>
+  {% endif %}
+</div>
+
+{% if analytics.count %}
+<script id="analytics-data" type="application/json">
+  {{ analytics | tojson | safe }}
+</script>
+<script id="severity-data" type="application/json">
+  {{ severity_totals | tojson | safe }}
+</script>
+<script id="category-data" type="application/json">
+  {{ category_totals | tojson | safe }}
+</script>
+<script>
+(function () {
+  const a = JSON.parse(document.getElementById('analytics-data').textContent);
+
+  BR.bar("dash-scores", a.labels,
+    [{ label: "Strategic score", data: a.scores, color: BR.PALETTE.purple }],
+    { money: false });
+
+  BR.doughnut("dash-recs", Object.keys(a.recommendations), Object.values(a.recommendations),
+    { money: false, legend: "bottom" });
+
+  BR.bar("dash-money", a.labels, [
+    { label: "Investment", data: a.investments, color: BR.PALETTE.pink },
+    { label: "Expected revenue", data: a.revenues, color: BR.PALETTE.mint },
+  ]);
+
+  const agents = a.avg_agent_scores || {};
+  const keys = Object.keys(agents);
+  BR.radar("dash-radar", keys.map(k => k.replace("_", " ").replace(/\b\w/g, c => c.toUpperCase())),
+    [{ label: "Average score", data: keys.map(k => agents[k]), color: BR.PALETTE.sky }]);
+
+  const sev = JSON.parse(document.getElementById('severity-data').textContent);
+  const cats = JSON.parse(document.getElementById('category-data').textContent);
+  BR.bar("dash-severity", Object.keys(sev),
+    [{ label: "Risks", data: Object.values(sev),
+       colors: Object.keys(sev).map(s => BR.alpha(BR.SEVERITY[s], .8)) }],
+    { money: false });
+  BR.polar("dash-categories", Object.keys(cats), Object.values(cats));
+})();
+</script>
+{% endif %}
+{% endblock %}

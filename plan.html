@@ -1,0 +1,137 @@
+{% extends "base_app.html" %}
+{% set active_page = 'planner' %}
+{% block title %}Plan — {{ scenario.title }}{% endblock %}
+{% block app_content %}
+
+<div class="page-header">
+  <div>
+    <span class="eyebrow">Chief of Staff · Program Director</span>
+    <h1>🧭 Understanding &amp; Plan</h1>
+    <p>What you asked for, what is in scope, how it gets built, when, and what it costs.</p>
+  </div>
+  <a href="{{ url_for('main.finance_page', scenario_id=scenario.id) }}" class="btn btn-secondary btn-sm">Finance →</a>
+</div>
+
+{% include "partials/_agent_empty.html" with context %}
+
+{% if result and not result.get('_failed') %}
+{% set budget = result.budget or {} %}
+
+<div class="grid grid-3" style="align-items:start;">
+  <div class="glass card text-center">
+    <div class="chart-box gauge"><canvas id="readiness-gauge"></canvas></div>
+    <p style="margin-top:6px;">Request readiness</p>
+    <span class="badge badge-conditions">Complexity: {{ result.complexity }}</span>
+  </div>
+
+  <div class="glass card" style="grid-column: span 2;">
+    <h3>📥 What the board understood</h3>
+    <p>{{ result.understood_request }}</p>
+    <div class="callout info" style="margin-top:10px;">
+      <b>🎯 Objective:</b> {{ result.business_objective }}
+    </div>
+    <div class="pill-row">
+      <span class="chip">{{ result.decision_type }}</span>
+      <span class="chip">⏱️ {{ result.timeline_months }} month window</span>
+      <span class="chip">💰 ₹{{ budget.total | inr }} to allocate</span>
+      <span class="chip">🔒 Confidence {{ (result.confidence * 100) | round(0) | int }}%</span>
+    </div>
+  </div>
+</div>
+
+<div class="section-title">🗺️ How and when it gets done</div>
+<div class="grid grid-2" style="align-items:start;">
+  <div class="glass card chart-card">
+    <h4>📆 Phase Timeline</h4>
+    <p class="chart-sub">Bars are coloured by the phase's own risk level.</p>
+    <div class="chart-box"><canvas id="plan-gantt"></canvas></div>
+  </div>
+
+  <div class="glass card chart-card">
+    <h4>🧮 Budget Allocation</h4>
+    <p class="chart-sub">Percentages proposed by the planner, costed against ₹{{ budget.total | inr }}.</p>
+    <div class="chart-box"><canvas id="plan-budget"></canvas></div>
+  </div>
+</div>
+
+<div class="glass card" style="margin-top:18px;">
+  <h4>📋 What to do, how to do it, when</h4>
+  <div class="phase-list" style="margin-top:12px;">
+    {% for p in result.phases %}
+    <div class="phase {{ p.risk_level }}">
+      <div class="phase-head">
+        <span class="phase-name">{{ loop.index }}. {{ p.phase }}</span>
+        <span>
+          <span class="phase-when">M{{ p.start_month | round(0) | int }} → M{{ (p.start_month + p.duration_months) | round(0) | int }}</span>
+          <span class="badge badge-{{ p.risk_level | lower }}">{{ p.risk_level }}</span>
+        </span>
+      </div>
+      <dl>
+        <dt>What</dt><dd>{{ p.what_to_do }}</dd>
+        <dt>How</dt><dd>{{ p.how_to_do_it }}</dd>
+        <dt>Owner</dt><dd>{{ p.owner }}</dd>
+        {% if p.deliverables %}<dt>Output</dt><dd>{{ p.deliverables | join('; ') }}</dd>{% endif %}
+        {% if p.exit_criteria %}<dt>Exit gate</dt><dd>{{ p.exit_criteria }}</dd>{% endif %}
+      </dl>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="section-title">🎯 Success, scope and unknowns</div>
+<div class="grid grid-3" style="align-items:start;">
+  <div class="glass card">
+    <h4>📏 Success Metrics</h4>
+    <div class="kv-list" style="margin-top:10px;">
+      {% for m in result.success_metrics %}
+      <div class="kv"><span>{{ m.metric }}</span><b>{{ m.target }}</b></div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="glass card">
+    <h4>✅ In Scope</h4>
+    <ul class="tag-list opps">{% for s in result.scope_included %}<li>{{ s }}</li>{% endfor %}</ul>
+    <h4 style="margin-top:14px;">🚫 Out of Scope</h4>
+    <ul class="tag-list risks">{% for s in result.scope_excluded %}<li>{{ s }}</li>{% endfor %}</ul>
+  </div>
+  <div class="glass card">
+    <h4>❓ Open Questions</h4>
+    <ul class="tag-list assumptions">{% for q in result.open_questions %}<li>{{ q }}</li>{% endfor %}</ul>
+    <h4 style="margin-top:14px;">🤔 Critical Assumptions</h4>
+    <ul class="tag-list assumptions">{% for a in result.critical_assumptions %}<li>{{ a }}</li>{% endfor %}</ul>
+  </div>
+</div>
+
+<div class="grid grid-2" style="margin-top:18px; align-items:start;">
+  <div class="glass card">
+    <h4>🧭 Recommended Approach</h4>
+    <p>{{ result.recommended_approach }}</p>
+    <p style="margin-top:8px;">{{ result.reasoning }}</p>
+  </div>
+  <div class="glass card">
+    <h4>⚡ Immediate Next Steps</h4>
+    <ul class="tag-list actions">{% for s in result.immediate_next_steps %}<li>{{ s }}</li>{% endfor %}</ul>
+  </div>
+</div>
+
+<script>
+(function () {
+  const budget = {{ (result.budget or {}).get('items', []) | tojson }};
+  const phases = {{ (result.phases or []) | tojson }};
+
+  BR.gauge("readiness-gauge", {{ result.readiness_score or 0 }});
+
+  BR.gantt("plan-gantt", phases.map(p => ({
+    phase: p.phase,
+    start_month: Number(p.start_month) || 0,
+    end_month: (Number(p.start_month) || 0) + (Number(p.duration_months) || 1),
+    duration_months: Number(p.duration_months) || 1,
+    owner: p.owner || "Unassigned",
+    risk_level: p.risk_level || "MEDIUM",
+  })));
+
+  BR.doughnut("plan-budget", budget.map(b => b.category), budget.map(b => b.amount));
+})();
+</script>
+{% endif %}
+{% endblock %}

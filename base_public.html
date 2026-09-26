@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="topnav">
+  <a href="{{ url_for('main.home') }}" class="brand"><span class="logo-emoji">🏛️</span> Autonomous AI Boardroom</a>
+  <div class="topnav-actions">
+    {% if session.get('user_id') %}
+      <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary btn-sm">📊 Dashboard</a>
+    {% else %}
+      <a href="{{ url_for('auth.signin') }}" class="btn btn-secondary btn-sm">Sign In</a>
+      <a href="{{ url_for('auth.signup') }}" class="btn btn-primary btn-sm">🚀 Get Started</a>
+    {% endif %}
+  </div>
+</div>
+{% block public_content %}{% endblock %}
+{% endblock %}

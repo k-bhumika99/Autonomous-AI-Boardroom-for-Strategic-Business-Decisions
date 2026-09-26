@@ -1,0 +1,184 @@
+{% extends "base_app.html" %}
+{% block title %}{{ title }} — {{ scenario.title }}{% endblock %}
+{% block app_content %}
+
+<div class="step-topbar">
+  <a class="step-back" href="{{ back_url }}">&larr; Back to Scenario</a>
+  <span class="step-pill">Step {{ step }} of {{ total_steps }}</span>
+</div>
+
+{% if waiting %}
+<div class="glass card step-waiting">
+  <div class="spinner"></div>
+  <h3 style="margin:0 0 6px;">{{ icon }} {{ agent_label }} is analyzing your scenario…</h3>
+  <p>Fast AI execution in progress. This page will refresh automatically in a few seconds.</p>
+  <p id="poll-stage" style="font-size:0.78rem; color:#8F9E9B; margin-top:6px;"></p>
+</div>
+<script>
+(function () {
+  const sid = {{ scenario.id }};
+  const agentKey = "{{ agent_key | default('') }}";
+  const doneMarker = agentKey + "_done";
+  const stageEl = document.getElementById("poll-stage");
+  let polls = 0;
+  const maxPolls = 150;  // stop after ~5 minutes
+
+  function poll() {
+    if (++polls > maxPolls) {
+      stageEl.textContent = "Still waiting… you can refresh the page manually.";
+      return;
+    }
+    fetch("/api/decision/" + sid + "/status")
+      .then(r => r.json())
+      .then(data => {
+        const stage = (data.stage || "").toLowerCase();
+        const completed = (data.completed_agents || []).map(a => a.toLowerCase());
+
+        // Show current stage
+        if (stage) {
+          stageEl.textContent = "Current stage: " + stage.replace(/_/g, " ");
+        }
+
+        // Reload if: agent finished, scenario completed/failed, or stage indicates done
+        if (completed.includes(agentKey) ||
+            stage === "completed" ||
+            data.status === "completed" ||
+            data.status === "completed_with_errors" ||
+            data.status === "failed" ||
+            stage.indexOf(doneMarker) !== -1) {
+          location.reload();
+          return;
+        }
+        setTimeout(poll, 1000);
+      })
+      .catch(() => setTimeout(poll, 2000));
+  }
+  setTimeout(poll, 500);
+})();
+</script>
+
+{% elif result and result.get('_failed') %}
+<div class="glass card step-waiting">
+  <span style="font-size:2.2rem;">{{ '⏳' if result.get('is_rate_limited') else '⚠️' }}</span>
+  <h3 style="margin:10px 0 6px;">
+    {% if result.get('is_rate_limited') %}{{ agent_label }} hit a rate limit — not a bug
+    {% else %}The {{ agent_label }} could not complete{% endif %}
+  </h3>
+  <p style="max-width:520px; margin:0 auto;">{{ result.reasoning }}</p>
+  {% if result.get('error_message') %}
+  <p style="margin-top:10px; font-family:monospace; font-size:.8rem; opacity:.7; word-break:break-word;">{{ result.error_message }}</p>
+  {% endif %}
+  <form method="POST" action="{{ url_for('api.start_decision', scenario_id=scenario.id) }}"
+        onsubmit="setTimeout(()=>location.reload(), 800);" style="margin-top:16px;">
+    <button type="submit" class="btn btn-primary">🔄 Retry This Agent</button>
+  </form>
+</div>
+
+{% else %}
+<div class="step-hero">
+  <span class="step-icon">{{ icon }}</span>
+  <div>
+    <h1>{{ title }}</h1>
+    <p>{{ tagline }}</p>
+  </div>
+</div>
+
+<div class="scenario-recap">
+  <span class="eyebrow">Your Scenario</span>
+  <p>{{ scenario.description }}</p>
+</div>
+
+<div class="kpi-tile-grid">
+  {% for k in kpis %}
+  <div class="kpi-tile tone-{{ k.tone }}">
+    <div class="kpi-icon">{{ k.icon }}</div>
+    <div class="kpi-value">{{ k.value }}</div>
+    <div class="kpi-label">{{ k.label }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="step-grid">
+  {% for s in sections %}
+  <div class="glass card step-section">
+    <h4>{{ s.icon }} {{ s.label }}</h4>
+    <ul class="tag-list {{ 'risks' if s.tone == 'coral' else 'opps' if s.tone == 'mint' else 'findings' }}">
+      {% for item in s['items'] %}<li>{{ item }}</li>{% endfor %}
+    </ul>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="callout {{ 'good' if conclusion_good else 'info' }}">
+  <b>🎯 {{ conclusion_label }}</b><br>{{ conclusion_text }}
+</div>
+
+{% if approval %}
+{% set status_label, status_class, status_icon = decision.approval_label %}
+<div class="glass card approval-panel {{ 'signed' if decision.approval_status != 'awaiting_approval' }}" style="margin-top:18px;">
+  <div class="flex-between" style="flex-wrap:wrap; gap:12px;">
+    <div>
+      <h3 style="margin:0;">{{ status_icon }} {{ status_label }}</h3>
+      {% if decision.approved_by %}
+      <p class="approval-meta">
+        Recorded by <b>{{ decision.approved_by }}</b> ({{ decision.approver_role }})
+        on {{ decision.approved_at.strftime('%d %b %Y, %H:%M') if decision.approved_at }}
+        · {{ decision.approved_budget_percent | round(0) | int }}% of budget released
+      </p>
+      {% else %}
+      <p class="approval-meta">This decision is waiting on {{ scenario.decision_owner or 'the CEO' }}.</p>
+      {% endif %}
+    </div>
+    <span class="badge {{ status_class }}">{{ status_label }}</span>
+  </div>
+
+  {% if decision.approval_note %}
+  <div class="callout info" style="margin-top:12px;"><b>Note:</b> {{ decision.approval_note }}</div>
+  {% endif %}
+
+  <div class="divider"></div>
+
+  <form method="POST" action="{{ url_for('main.approve_decision', scenario_id=scenario.id) }}">
+    <div class="grid grid-3">
+      <div class="form-group">
+        <label>👤 Your name</label>
+        <input type="text" name="approved_by" value="{{ decision.approved_by or '' }}" placeholder="Who is signing this off">
+      </div>
+      <div class="form-group">
+        <label>🎖️ Role</label>
+        <select name="approver_role">
+          {% for role in ['CEO', 'Managing Director', 'Department Head', 'Team Lead', 'Board'] %}
+          <option value="{{ role }}" {{ 'selected' if decision.approver_role == role }}>{{ role }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>💰 Budget released (%)</label>
+        <input type="number" name="approved_budget_percent" min="0" max="100" step="1"
+               value="{{ (decision.approved_budget_percent or 100) | round(0) | int }}">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>📝 Decision note (optional)</label>
+      <textarea name="approval_note" placeholder="Conditions, caveats, or what to revisit at the first checkpoint."
+                style="min-height:70px;">{{ decision.approval_note or '' }}</textarea>
+    </div>
+    <div class="approval-actions">
+      <button type="submit" name="action" value="approve" class="btn btn-success">✅ Approve</button>
+      <button type="submit" name="action" value="approve_with_conditions" class="btn btn-warn">📝 With conditions</button>
+      <button type="submit" name="action" value="send_back" class="btn btn-secondary">↩️ Send back</button>
+      <button type="submit" name="action" value="reject" class="btn btn-danger">⛔ Reject</button>
+    </div>
+  </form>
+</div>
+{% endif %}
+
+<div class="step-nav">
+  {% if next_url %}
+  <a href="{{ next_url }}" class="btn btn-primary">Next Agent → {{ next_label }}</a>
+  {% else %}
+  <a href="{{ url_for('main.report_page', scenario_id=scenario.id) }}" class="btn btn-primary">📜 View Final Report</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

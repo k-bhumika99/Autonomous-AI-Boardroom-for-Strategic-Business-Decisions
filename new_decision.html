@@ -1,0 +1,114 @@
+{% extends "base_app.html" %}
+{% set active_page = 'new_decision' %}
+{% block title %}New Decision — Autonomous AI Boardroom{% endblock %}
+{% block app_content %}
+
+<div class="page-header">
+  <div>
+    <span class="eyebrow">Start a new session</span>
+    <h1>➕ New Boardroom Decision</h1>
+    <p>The more context you give, the more specific the plan, budget and risk register will be.</p>
+  </div>
+</div>
+
+<div class="glass card" style="max-width: 860px;">
+  <form method="POST" action="{{ url_for('main.new_decision') }}">
+    <div class="form-group">
+      <label>🏷️ Decision Title</label>
+      <input type="text" name="title" placeholder="Launch New AI Healthcare Product" required>
+    </div>
+
+    <div class="form-group">
+      <label>📝 Business Scenario</label>
+      <textarea name="description" placeholder="Describe the decision in detail — what you want to build or do, why now, who it is for, and any relevant context." required>{{ request.form.get('description','') }}</textarea>
+      <div class="form-hint">💡 Try the sample: "Our company has developed an AI-powered healthcare product. We require ₹50 lakh investment and expect ₹1.2 crore annual revenue. Our target customers are private hospitals and diagnostic centers. The planned launch timeline is 6 months."</div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="form-group">
+        <label>💰 Investment (₹)</label>
+        <input type="number" step="any" name="investment" placeholder="5000000" required>
+      </div>
+      <div class="form-group">
+        <label>📈 Expected Annual Revenue (₹)</label>
+        <input type="number" step="any" name="expected_revenue" placeholder="12000000" required>
+      </div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="form-group">
+        <label>💸 Operating Cost (₹/year)</label>
+        <input type="number" step="any" name="operating_cost" placeholder="2000000">
+      </div>
+      <div class="form-group">
+        <label>👥 Expected Customers</label>
+        <input type="number" name="expected_customers" placeholder="50">
+        <div class="form-hint">Drives the growth curve, funnel and CAC model.</div>
+      </div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="form-group">
+        <label>🎯 Target Market</label>
+        <input type="text" name="target_market" placeholder="Private hospitals and diagnostic centers">
+      </div>
+      <div class="form-group">
+        <label>⏱️ Timeline</label>
+        <input type="text" name="timeline" placeholder="6 months">
+        <div class="form-hint">Sets the roadmap window and the revenue ramp.</div>
+      </div>
+    </div>
+
+    <div class="grid grid-3">
+      <div class="form-group">
+        <label>🏭 Industry</label>
+        <input type="text" name="industry" placeholder="Healthcare technology">
+      </div>
+      <div class="form-group">
+        <label>🧩 Business Model</label>
+        <select name="business_model">
+          <option value="">Not sure / other</option>
+          {% for m in ['SaaS / Subscription', 'Marketplace', 'D2C Product', 'B2B Enterprise',
+                       'Services / Consulting', 'Hardware', 'Licensing', 'Ad-supported'] %}
+          <option value="{{ m }}">{{ m }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>🖋️ Who signs this off?</label>
+        <select name="decision_owner">
+          {% for r in ['CEO', 'Managing Director', 'Department Head', 'Team Lead', 'Board'] %}
+          <option value="{{ r }}">{{ r }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>ℹ️ Additional Information (optional)</label>
+      <textarea name="additional_information" placeholder="Existing team, current traction, competitors you know of, regulatory constraints, anything the board should know..."></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-block">🏛️ Start AI Boardroom</button>
+  </form>
+</div>
+
+<div class="glass card" style="max-width:860px; margin-top:18px;">
+  <h4>🤖 What the seven agents will produce</h4>
+  <div class="grid grid-2" style="margin-top:10px;">
+    <div class="kv-list">
+      <div class="kv"><span>🧭 <b>Planner</b></span><span>Scope, phases, what/how/when, budget split</span></div>
+      <div class="kv"><span>💰 <b>Finance</b></span><span>Budget, ROI, profit &amp; loss, 3-year projection</span></div>
+      <div class="kv"><span>📣 <b>Marketing</b></span><span>Growth curve, channels, funnel, CAC &amp; LTV</span></div>
+      <div class="kv"><span>⚙️ <b>Operations</b></span><span>Roadmap, staffing, readiness, bottlenecks</span></div>
+    </div>
+    <div class="kv-list">
+      <div class="kv"><span>⚠️ <b>Risk</b></span><span>Probability × impact matrix, exposure, mitigation</span></div>
+      <div class="kv"><span>🗣️ <b>Debate</b></span><span>Where the agents clash and how it resolves</span></div>
+      <div class="kv"><span>👔 <b>CEO</b></span><span>Decision, staged budget release, checkpoints</span></div>
+      <div class="kv"><span>📜 <b>Report</b></span><span>Executive summary, 90-day plan, PDF export</span></div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

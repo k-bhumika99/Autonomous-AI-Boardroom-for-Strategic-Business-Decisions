@@ -1,0 +1,310 @@
+{% extends "base_app.html" %}
+{% set active_page = 'whatif' %}
+{% block title %}What-If — {{ scenario.title }}{% endblock %}
+{% block app_content %}
+
+{% set base = result.base_case %}
+{% set wi = result.what_if_case %}
+
+<div class="page-header">
+  <div>
+    <span class="eyebrow">Interactive Boardroom Simulation</span>
+    <h1>🔮 What-If Scenario Simulator</h1>
+    <p>Simulating <b>{{ scenario.title }}</b>. Provide a custom scenario hypothesis or adjust figures to observe the AI Boardroom's live verdict, charts, and strategic recommendation.</p>
+  </div>
+  {% if has_custom_inputs %}
+    <a href="{{ url_for('main.what_if_reset', scenario_id=scenario.id) }}" class="btn btn-secondary btn-sm" title="Restore baseline scenario figures">↺ Reset to original</a>
+  {% endif %}
+</div>
+
+<!-- ======================================================================
+     SCENARIO INPUT CONTROLS & PRESETS
+     ====================================================================== -->
+<div class="glass card" style="margin-bottom: 22px;">
+  <div class="flex-between" style="margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+    <h4 style="margin:0;">🎛️ Define Your Scenario</h4>
+    <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+      <span style="font-size:0.8rem; font-weight:700; color:var(--ink-soft); margin-right:4px;">Presets:</span>
+      <button type="button" class="btn btn-ghost btn-sm" style="border:1px solid rgba(142,124,255,0.25);" onclick="applyPreset('Bull Case (+30% Revenue, +10% Cost)', 1.30, 1.10, 1.0)">🚀 Bull Case</button>
+      <button type="button" class="btn btn-ghost btn-sm" style="border:1px solid rgba(142,124,255,0.25);" onclick="applyPreset('Bear Case (-30% Revenue, +15% Cost)', 0.70, 1.15, 1.0)">🐻 Bear Case</button>
+      <button type="button" class="btn btn-ghost btn-sm" style="border:1px solid rgba(142,124,255,0.25);" onclick="applyPreset('Lean Operations (-25% Operating Cost)', 1.0, 0.75, 1.0)">🛡️ Lean Ops</button>
+      <button type="button" class="btn btn-ghost btn-sm" style="border:1px solid rgba(142,124,255,0.25);" onclick="applyPreset('Aggressive Scale (+50% Inv, +70% Rev)', 1.70, 1.25, 1.5)">⚡ Scale Up</button>
+    </div>
+  </div>
+
+  <form method="POST" id="whatif-form">
+    <div class="form-group" style="margin-bottom: 14px;">
+      <label>📝 Scenario Premise / Hypothesis</label>
+      <input type="text" id="input-scenario-name" name="scenario_name"
+             placeholder="e.g. Price War with competitor, Delayed Launch by 3 months, Tier-2 City Expansion, Supply Chain Squeeze..."
+             value="{{ current_inputs.scenario_name if current_inputs else '' }}">
+    </div>
+
+    <div class="grid grid-3">
+      <div class="form-group">
+        <label>💰 Capital Investment (₹)</label>
+        <input type="number" step="any" id="input-investment" name="investment"
+               value="{{ current_inputs.investment if current_inputs else scenario.investment }}" required>
+      </div>
+      <div class="form-group">
+        <label>📈 Expected Revenue (₹)</label>
+        <input type="number" step="any" id="input-revenue" name="expected_revenue"
+               value="{{ current_inputs.expected_revenue if current_inputs else scenario.expected_revenue }}" required>
+      </div>
+      <div class="form-group">
+        <label>🧾 Operating Cost (₹)</label>
+        <input type="number" step="any" id="input-cost" name="operating_cost"
+               value="{{ current_inputs.operating_cost if current_inputs else scenario.operating_cost }}" required>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:12px; align-items:center; margin-top:16px; flex-wrap:wrap;">
+      <button type="submit" class="btn btn-primary" style="padding:10px 24px; font-weight:700;">🔮 Simulate Scenario</button>
+      {% if has_custom_inputs %}
+        <a href="{{ url_for('main.what_if_reset', scenario_id=scenario.id) }}" class="btn btn-secondary btn-sm">↺ Reset to original</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<!-- ======================================================================
+     BOARDROOM RECOMMENDATION & SCORE BANNER
+     ====================================================================== -->
+<div class="glass card" style="margin-bottom: 22px; border-left: 6px solid {% if wi.score >= 75 %}#10b981{% elif wi.score >= 60 %}#6366f1{% elif wi.score >= 45 %}#f59e0b{% else %}#ef4444{% endif %};">
+  <div class="flex-between" style="flex-wrap:wrap; gap:14px; margin-bottom:12px;">
+    <div>
+      <span class="eyebrow">Boardroom Verdict — {{ result.scenario_name }}</span>
+      <div style="display:flex; align-items:center; gap:12px; margin-top:4px;">
+        <span class="badge {{ result.badge_class }}" style="font-size:1.05rem; padding:6px 16px;">
+          {{ wi.decision }}
+        </span>
+        {% if result.decision_changed %}
+          <span style="font-size:0.88rem; font-weight:700; color:var(--ink-soft);">
+            (Shifted from <b>{{ base.decision }}</b>)
+          </span>
+        {% endif %}
+      </div>
+    </div>
+    <div style="text-align:right;">
+      <span style="font-size:0.75rem; text-transform:uppercase; font-weight:800; color:var(--ink-soft); display:block;">Strategic Score</span>
+      <span style="font-size:1.85rem; font-weight:900; color:var(--purple-dark);">
+        {{ wi.score }}<span style="font-size:1.0rem; color:var(--ink-soft);">/100</span>
+      </span>
+      {% if result.score_change != 0 %}
+        <span class="chip" style="margin-left:6px; background:{% if result.score_change > 0 %}#dcfce7; color:#16a34a{% else %}#fee2e2; color:#dc2626{% endif %};">
+          {{ '+' if result.score_change > 0 else '' }}{{ result.score_change }} pts
+        </span>
+      {% endif %}
+    </div>
+  </div>
+
+  <p style="font-size:0.95rem; line-height:1.6; color:var(--ink); margin-bottom:0;">
+    {{ result.verdict_narrative }}
+  </p>
+</div>
+
+<!-- ======================================================================
+     CHARTS SECTION (COMPARISON & SENSITIVITY)
+     ====================================================================== -->
+<div class="grid grid-2" style="margin-bottom: 22px; align-items: stretch;">
+  <div class="glass card chart-card">
+    <div class="flex-between" style="margin-bottom:4px;">
+      <h4>⚖️ Base Case vs. What-If Financials</h4>
+      <span class="chip">₹ in INR</span>
+    </div>
+    <p class="chart-sub">Direct comparison of capital required, projected revenue, operating cost, and net profit.</p>
+    <div class="chart-box" style="height:280px;"><canvas id="wi-compare"></canvas></div>
+  </div>
+
+  <div class="glass card chart-card">
+    <div class="flex-between" style="margin-bottom:4px;">
+      <h4>📉 Revenue Sensitivity Curve</h4>
+      <span class="chip">Multi-Axis</span>
+    </div>
+    <p class="chart-sub">How net profit and strategic boardroom score move as actual revenue varies from -40% to +40%.</p>
+    <div class="chart-box" style="height:280px;"><canvas id="wi-sensitivity"></canvas></div>
+  </div>
+</div>
+
+<div class="grid grid-2" style="margin-bottom: 22px; align-items: stretch;">
+  <div class="glass card chart-card">
+    <div class="flex-between" style="margin-bottom:4px;">
+      <h4>📊 Key Financial Ratios & Return Rates</h4>
+      <span class="chip">Efficiency</span>
+    </div>
+    <p class="chart-sub">Comparing Return on Investment (ROI), Profit Margin, and Overall Boardroom Score.</p>
+    <div class="chart-box" style="height:280px;"><canvas id="wi-ratios"></canvas></div>
+  </div>
+
+  <!-- Side-by-side metric table -->
+  <div class="glass card">
+    <h4>📋 Side-by-Side Variance Analysis</h4>
+    <p class="chart-sub">Exact delta for every primary business metric under this scenario.</p>
+    <table class="mini-table">
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>Base Case</th>
+          <th>What-If Case</th>
+          <th style="text-align:right;">Variance</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>💰 Investment</td>
+          <td>₹{{ base.investment | inr }}</td>
+          <td>₹{{ wi.investment | inr }}</td>
+          <td style="text-align:right;" class="{{ 'trend-down' if (wi.investment > base.investment) else 'trend-up' }}">
+            {{ (wi.investment - base.investment) | inr }}
+          </td>
+        </tr>
+        <tr>
+          <td>📈 Expected Revenue</td>
+          <td>₹{{ base.revenue | inr }}</td>
+          <td>₹{{ wi.revenue | inr }}</td>
+          <td style="text-align:right;" class="{{ 'trend-up' if (wi.revenue > base.revenue) else 'trend-down' }}">
+            {{ (wi.revenue - base.revenue) | inr }}
+          </td>
+        </tr>
+        <tr>
+          <td>🧾 Operating Cost</td>
+          <td>₹{{ base.operating_cost | inr }}</td>
+          <td>₹{{ wi.operating_cost | inr }}</td>
+          <td style="text-align:right;" class="{{ 'trend-down' if (wi.operating_cost > base.operating_cost) else 'trend-up' }}">
+            {{ (wi.operating_cost - base.operating_cost) | inr }}
+          </td>
+        </tr>
+        <tr>
+          <td><b>💵 Net Profit</b></td>
+          <td><b>₹{{ base.profit | inr }}</b></td>
+          <td><b>₹{{ wi.profit | inr }}</b></td>
+          <td style="text-align:right;" class="{{ 'trend-up' if result.profit_change >= 0 else 'trend-down' }}">
+            <b>₹{{ result.profit_change | inr }}</b>
+          </td>
+        </tr>
+        <tr>
+          <td><b>🎯 Return on Investment (ROI)</b></td>
+          <td>{{ base.roi_percent }}%</td>
+          <td>{{ wi.roi_percent }}%</td>
+          <td style="text-align:right;" class="{{ 'trend-up' if result.roi_change >= 0 else 'trend-down' }}">
+            {{ '+' if result.roi_change > 0 else '' }}{{ result.roi_change }}%
+          </td>
+        </tr>
+        <tr>
+          <td>📊 Profit Margin</td>
+          <td>{{ base.profit_margin_percent }}%</td>
+          <td>{{ wi.profit_margin_percent }}%</td>
+          <td style="text-align:right;" class="{{ 'trend-up' if result.margin_change >= 0 else 'trend-down' }}">
+            {{ '+' if result.margin_change > 0 else '' }}{{ result.margin_change }}%
+          </td>
+        </tr>
+        <tr>
+          <td>⏳ Break-Even Horizon</td>
+          <td>{{ base.breakeven_years or 'None' }} yr</td>
+          <td>{{ wi.breakeven_years or 'None' }} yr</td>
+          <td style="text-align:right; font-size:0.85rem; color:var(--ink-soft);">
+            {% if base.breakeven_years and wi.breakeven_years %}
+              {% set be_diff = (wi.breakeven_years - base.breakeven_years) | round(2) %}
+              {{ '+' if be_diff > 0 else '' }}{{ be_diff }} yr
+            {% else %}
+              —
+            {% endif %}
+          </td>
+        </tr>
+        <tr>
+          <td><b>🏛️ Strategic Board Score</b></td>
+          <td><b>{{ base.score }}</b></td>
+          <td><b>{{ wi.score }}</b></td>
+          <td style="text-align:right;" class="{{ 'trend-up' if result.score_change >= 0 else 'trend-down' }}">
+            <b>{{ '+' if result.score_change > 0 else '' }}{{ result.score_change }} pts</b>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ======================================================================
+     BOARDROOM STRATEGIC ANALYSIS (OPPORTUNITIES, RISKS, ACTIONS)
+     ====================================================================== -->
+<div class="grid grid-3" style="margin-bottom: 24px; align-items: start;">
+  <div class="glass card" style="border-top: 4px solid var(--mint);">
+    <h4>💡 Key Upsides & Opportunities</h4>
+    <ul class="tag-list findings" style="margin-top:12px;">
+      {% for item in result.opportunities %}
+        <li>{{ item }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div class="glass card" style="border-top: 4px solid var(--coral);">
+    <h4>⚠️ Key Risks & Vulnerabilities</h4>
+    <ul class="tag-list findings" style="margin-top:12px;">
+      {% for item in result.risks %}
+        <li style="border-left-color: var(--coral);">{{ item }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div class="glass card" style="border-top: 4px solid var(--purple);">
+    <h4>🎯 Recommended Boardroom Actions</h4>
+    <ul class="tag-list findings" style="margin-top:12px;">
+      {% for item in result.recommended_actions %}
+        <li style="border-left-color: var(--purple);">{{ item }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+
+<script>
+function applyPreset(name, revMult, costMult, invMult) {
+  const baseInv = {{ scenario.investment or 0 }};
+  const baseRev = {{ scenario.expected_revenue or 0 }};
+  const baseCost = {{ scenario.operating_cost or 0 }};
+
+  document.getElementById('input-scenario-name').value = name;
+  document.getElementById('input-investment').value = Math.round(baseInv * invMult);
+  document.getElementById('input-revenue').value = Math.round(baseRev * revMult);
+  document.getElementById('input-cost').value = Math.round(baseCost * costMult);
+  document.getElementById('whatif-form').submit();
+}
+
+(function () {
+  const sens = {{ sensitivity | tojson }};
+
+  // 1. Sensitivity Mixed Chart (Profit Bars + Score Line)
+  BR.mixed("wi-sensitivity", sens.labels,
+    [{ label: "Net Profit", data: sens.profits, color: BR.PALETTE.sky }],
+    [{ label: "Strategic Score", data: sens.scores, color: BR.PALETTE.purpleDark, axis: "y1" }],
+    { secondAxis: true });
+
+  // 2. Base vs What-If Financials Comparison Bar Chart
+  BR.bar("wi-compare", ["Investment", "Revenue", "Operating Cost", "Net Profit"], [
+    {
+      label: "Base Case",
+      data: [{{ base.investment }}, {{ base.revenue }}, {{ base.operating_cost }}, {{ base.profit }}],
+      color: BR.PALETTE.lilac
+    },
+    {
+      label: {{ result.scenario_name | tojson }},
+      data: [{{ wi.investment }}, {{ wi.revenue }}, {{ wi.operating_cost }}, {{ wi.profit }}],
+      color: {% if wi.profit >= 0 %}BR.PALETTE.mint{% else %}BR.PALETTE.coral{% endif %}
+    },
+  ]);
+
+  // 3. Efficiency Ratios Comparison Bar Chart
+  BR.bar("wi-ratios", ["ROI (%)", "Profit Margin (%)", "Board Score (/100)"], [
+    {
+      label: "Base Case",
+      data: [{{ base.roi_percent }}, {{ base.profit_margin_percent }}, {{ base.score }}],
+      color: BR.PALETTE.lilac
+    },
+    {
+      label: {{ result.scenario_name | tojson }},
+      data: [{{ wi.roi_percent }}, {{ wi.profit_margin_percent }}, {{ wi.score }}],
+      color: BR.PALETTE.purple
+    }
+  ]);
+})();
+</script>
+{% endblock %}

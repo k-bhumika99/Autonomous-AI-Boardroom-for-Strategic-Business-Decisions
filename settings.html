@@ -1,0 +1,40 @@
+{% extends "base_app.html" %}
+{% set active_page = 'settings' %}
+{% block title %}Settings — Autonomous AI Boardroom{% endblock %}
+{% block app_content %}
+
+<div class="page-header">
+  <div>
+    <span class="eyebrow">Account</span>
+    <h1>🛠️ Settings</h1>
+  </div>
+</div>
+
+<div class="grid grid-2" style="align-items:start;">
+  <div class="glass card">
+    <h3>👤 Profile</h3>
+    <p>🧑 <b>Name:</b> {{ user.name }}</p>
+    <p>📧 <b>Email:</b> {{ user.email }}</p>
+    <p>📅 <b>Member Since:</b> {{ user.created_at.strftime('%d %b %Y') }}</p>
+  </div>
+
+  <div class="glass card">
+    <h3>🤖 Model Information</h3>
+    <p>🧠 <b>AI Model:</b> Google Gemini (via LangChain)</p>
+    <p>🕸️ <b>Orchestration:</b> LangGraph multi-agent workflow</p>
+    <p>🔑 <b>API Key:</b> ●●●●●●●● <span class="form-hint">(never shown — configured via .env)</span></p>
+  </div>
+</div>
+
+<div class="glass card" style="margin-top:18px;">
+  <h3>⚙️ Application Preferences</h3>
+  <p>🎨 Theme: Pastel Enterprise (light)</p>
+  <p>💱 Currency: Indian Rupee (₹)</p>
+  <p>📊 Default Scoring Weights: Finance 25% · Marketing 20% · Operations 20% · Risk 20% · Strategic Fit 15%</p>
+</div>
+
+<div class="glass card" style="margin-top:18px;">
+  <a href="{{ url_for('auth.logout') }}" class="btn btn-secondary">🚪 Logout</a>
+</div>
+
+{% endblock %}

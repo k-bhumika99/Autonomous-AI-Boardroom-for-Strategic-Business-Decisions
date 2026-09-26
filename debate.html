@@ -1,0 +1,110 @@
+{% extends "base_app.html" %}
+{% set active_page = 'debate' %}
+{% block title %}Boardroom Debate — {{ scenario.title }}{% endblock %}
+{% block app_content %}
+
+<div class="page-header">
+  <div>
+    <span class="eyebrow">Boardroom Review</span>
+    <h1>🗣️ Debate &amp; Cross-Examination</h1>
+    <p>Where the four agents agree, where they clash, and how the clash gets resolved.</p>
+  </div>
+  <a href="{{ url_for('main.ceo_page', scenario_id=scenario.id) }}" class="btn btn-secondary btn-sm">CEO Decision →</a>
+</div>
+
+{% if not debate %}
+<div class="glass card empty-state">
+  <span class="emoji">⏳</span>
+  <p>The board hasn't debated this decision yet.</p>
+  <a href="{{ url_for('main.boardroom_execution', scenario_id=scenario.id, next='debate_page') }}" class="btn btn-primary">Run Boardroom →</a>
+</div>
+{% else %}
+
+<div class="grid grid-3" style="align-items:start;">
+  <div class="glass card text-center">
+    <div class="chart-box gauge"><canvas id="consensus-gauge"></canvas></div>
+    <p style="margin-top:4px;">Board consensus strength</p>
+    <span class="badge {{ 'badge-strong' if debate.consensus_strength >= 70 else 'badge-conditions' if debate.consensus_strength >= 40 else 'badge-reject' }}">
+      {{ debate.agreements | length }} agreements · {{ debate.disagreements | length }} disputes
+    </span>
+  </div>
+
+  <div class="glass card chart-card" style="grid-column: span 2;">
+    <h4>📊 How each agent scored it</h4>
+    <p class="chart-sub">Wide spread between the bars is exactly what the debate exists to resolve.</p>
+    <div class="chart-box"><canvas id="debate-scores"></canvas></div>
+  </div>
+</div>
+
+<div class="glass card" style="margin-top:18px;">
+  <h4>🧾 Summary of the session</h4>
+  <p>{{ debate.summary }}</p>
+  <div class="callout good" style="margin-top:12px;">
+    <b>🤝 Consensus:</b> {{ debate.consensus }}
+  </div>
+</div>
+
+<div class="section-title">⚔️ The two sides</div>
+<div class="grid grid-2" style="align-items:start;">
+  <div class="glass card">
+    <h4>👍 Strongest arguments FOR</h4>
+    <ul class="tag-list opps">{% for a in debate.strongest_for %}<li>{{ a }}</li>{% endfor %}</ul>
+  </div>
+  <div class="glass card">
+    <h4>👎 Strongest arguments AGAINST</h4>
+    <ul class="tag-list risks">{% for a in debate.strongest_against %}<li>{{ a }}</li>{% endfor %}</ul>
+  </div>
+</div>
+
+<div class="grid grid-3" style="margin-top:18px; align-items:start;">
+  <div class="glass card">
+    <h4>✅ Agreements</h4>
+    <ul class="tag-list opps">{% for a in debate.agreements %}<li>{{ a }}</li>{% endfor %}</ul>
+  </div>
+  <div class="glass card">
+    <h4>⚡ Disagreements</h4>
+    <ul class="tag-list risks">{% for d in debate.disagreements %}<li>{{ d }}</li>{% endfor %}</ul>
+  </div>
+  <div class="glass card">
+    <h4>🔀 Contradictions</h4>
+    <ul class="tag-list assumptions">{% for c in debate.contradictions %}<li>{{ c }}</li>{% endfor %}</ul>
+  </div>
+</div>
+
+<div class="glass card" style="margin-top:18px;">
+  <h4>🧩 Proposed Resolutions</h4>
+  <ul class="tag-list actions">{% for r in debate.resolution %}<li>{{ r }}</li>{% endfor %}</ul>
+</div>
+
+<div class="section-title">🎙️ Positions on the record</div>
+<div class="grid grid-2" style="align-items:start;">
+  {% for label, emoji, data in [('Finance', '💰', finance), ('Marketing', '📣', marketing),
+                                ('Operations', '⚙️', operations), ('Risk', '⚠️', risk)] %}
+  {% if data %}
+  <div class="glass debate-card">
+    <div class="speaker">{{ emoji }} {{ label }} Agent
+      <span class="badge badge-recommend">{{ data.get('recommendation', '—') }}</span>
+      <span class="chip">{{ data.get('score', 0) | round(0) | int }}/100</span>
+    </div>
+    <p>{{ data.get('reasoning', '') }}</p>
+  </div>
+  {% endif %}
+  {% endfor %}
+</div>
+
+<script>
+(function () {
+  BR.gauge("consensus-gauge", {{ debate.consensus_strength or 0 }}, { caption: "% aligned" });
+
+  BR.bar("debate-scores",
+    ["Finance", "Marketing", "Operations", "Risk"],
+    [{ label: "Score",
+       data: [{{ finance.get('score', 0) or 0 }}, {{ marketing.get('score', 0) or 0 }},
+              {{ operations.get('score', 0) or 0 }}, {{ risk.get('score', 0) or 0 }}],
+       colors: [BR.alpha(BR.PALETTE.mint, .8), BR.alpha(BR.PALETTE.pink, .8),
+                BR.alpha(BR.PALETTE.sky, .8), BR.alpha(BR.PALETTE.amber, .8)] }],
+    { money: false });
+})();
+</script>
+{% endif %}
+{% endblock %}

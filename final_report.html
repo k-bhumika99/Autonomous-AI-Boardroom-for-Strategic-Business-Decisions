@@ -1,0 +1,179 @@
+{% extends "base_app.html" %}
+{% set active_page = 'report' %}
+{% block title %}Executive Report — {{ scenario.title }}{% endblock %}
+{% block app_content %}
+
+{% set status_label, status_class, status_icon = decision.approval_label %}
+{% set p = (finance.get('projection') or {}) %}
+{% set budget = (finance.get('budget') or {}) %}
+{% set mx = (risk.get('matrix') or {}) %}
+
+<div class="page-header">
+  <div>
+    <span class="eyebrow">Executive report · {{ decision.created_at.strftime('%d %b %Y') }}</span>
+    <h1>📜 {{ scenario.title }}</h1>
+    <p>{{ report.get('business_objective', '') }}</p>
+  </div>
+  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+    <a href="{{ url_for('main.what_if_page', scenario_id=scenario.id) }}" class="btn btn-secondary btn-sm">🔮 What-If</a>
+    <a href="{{ url_for('main.report_download', scenario_id=scenario.id) }}" class="btn btn-primary btn-sm">⬇️ Download PDF</a>
+  </div>
+</div>
+
+<div class="glass greeting-card" style="margin-bottom:18px;">
+  <div>
+    <h2>{{ report.get('final_recommendation') }}</h2>
+    <p>Strategic score {{ report.get('strategic_score') }}/100 · Sign-off: {{ status_icon }} {{ status_label }}
+      {% if decision.approved_by %} by {{ decision.approved_by }} ({{ decision.approver_role }}){% endif %}</p>
+  </div>
+  <div style="display:flex; align-items:center; gap:16px;">
+    <div class="chart-box gauge" style="width:180px; height:110px;"><canvas id="rep-gauge"></canvas></div>
+  </div>
+</div>
+
+<div class="glass card">
+  <h3>🧾 Executive Summary</h3>
+  <p>{{ report.get('executive_summary') }}</p>
+</div>
+
+<div class="kpi-row" style="margin-top:18px;">
+  <div class="kpi info">
+    <div class="kpi-label">Investment</div>
+    <div class="kpi-value">₹{{ scenario.investment | inr }}</div>
+  </div>
+  <div class="kpi {{ 'good' if p.get('total_profit', 0) > 0 else 'bad' }}">
+    <div class="kpi-label">3-Year Profit</div>
+    <div class="kpi-value">₹{{ p.get('total_profit', 0) | inr }}</div>
+    <div class="kpi-note">Payback: {{ p.get('payback_year') or 'beyond horizon' }}</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">3-Year Revenue</div>
+    <div class="kpi-value">₹{{ p.get('total_revenue', 0) | inr }}</div>
+  </div>
+  <div class="kpi {{ 'bad' if risk.get('overall_risk_level') in ['HIGH','CRITICAL'] else 'warn' }}">
+    <div class="kpi-label">Risk Level</div>
+    <div class="kpi-value">{{ risk.get('overall_risk_level', '—') }}</div>
+    <div class="kpi-note">{{ mx.get('points', []) | length }} risks logged</div>
+  </div>
+  <div class="kpi good">
+    <div class="kpi-label">Budget Released</div>
+    <div class="kpi-value">{{ decision.approved_budget_percent | round(0) | int }}%</div>
+    <div class="kpi-note">₹{{ (scenario.investment * decision.approved_budget_percent / 100) | inr }}</div>
+  </div>
+</div>
+
+<div class="section-title">📊 The numbers at a glance</div>
+<div class="grid grid-2" style="align-items:start;">
+  <div class="glass card chart-card">
+    <h4>📈 Three-Year Outlook</h4>
+    <div class="chart-box"><canvas id="rep-projection"></canvas></div>
+  </div>
+  <div class="glass card chart-card">
+    <h4>🕸️ Board Scorecard</h4>
+    <div class="chart-box"><canvas id="rep-radar"></canvas></div>
+  </div>
+</div>
+
+<div class="grid grid-2" style="margin-top:18px; align-items:start;">
+  <div class="glass card chart-card">
+    <h4>🧮 Budget Allocation</h4>
+    <div class="chart-box short"><canvas id="rep-budget"></canvas></div>
+  </div>
+  <div class="glass card chart-card">
+    <h4>🎯 Risk Matrix</h4>
+    <div class="chart-box short"><canvas id="rep-risk"></canvas></div>
+  </div>
+</div>
+
+<div class="section-title">🚀 What happens next</div>
+<div class="grid grid-2" style="align-items:start;">
+  <div class="glass card">
+    <h4>📋 Action Plan</h4>
+    <ul class="tag-list actions">{% for a in report.get('action_plan', []) %}<li>{{ a }}</li>{% endfor %}</ul>
+  </div>
+  <div class="glass card">
+    <h4>🗓️ First 90 Days</h4>
+    <ul class="tag-list findings">{% for a in report.get('ninety_day_plan', []) %}<li>{{ a }}</li>{% endfor %}</ul>
+  </div>
+</div>
+
+<div class="grid grid-3" style="margin-top:18px; align-items:start;">
+  <div class="glass card">
+    <h4>🌱 Key Opportunities</h4>
+    <ul class="tag-list opps">{% for o in report.get('key_opportunities', []) %}<li>{{ o }}</li>{% endfor %}</ul>
+  </div>
+  <div class="glass card">
+    <h4>⚠️ Key Risks</h4>
+    <ul class="tag-list risks">{% for r in report.get('key_risks', []) %}<li>{{ r }}</li>{% endfor %}</ul>
+  </div>
+  <div class="glass card">
+    <h4>📌 Conditions for Approval</h4>
+    <ul class="tag-list assumptions">{% for c in report.get('conditions', []) %}<li>{{ c }}</li>{% endfor %}</ul>
+  </div>
+</div>
+
+<div class="grid grid-3" style="margin-top:18px; align-items:start;">
+  <div class="glass card">
+    <h4>📈 Profit Drivers</h4>
+    <ul class="tag-list opps">{% for d in report.get('profit_drivers', []) %}<li>{{ d }}</li>{% endfor %}</ul>
+  </div>
+  <div class="glass card">
+    <h4>📉 Loss Drivers</h4>
+    <ul class="tag-list risks">{% for d in report.get('loss_drivers', []) %}<li>{{ d }}</li>{% endfor %}</ul>
+  </div>
+  <div class="glass card">
+    <h4>🚧 Execution Bottlenecks</h4>
+    <ul class="tag-list assumptions">{% for b in report.get('bottlenecks', []) %}<li>{{ b }}</li>{% endfor %}</ul>
+  </div>
+</div>
+
+<div class="section-title">🗣️ Where the board disagreed</div>
+<div class="grid grid-2" style="align-items:start;">
+  <div class="glass card">
+    <h4>⚡ Conflicts</h4>
+    <ul class="tag-list risks">{% for c in report.get('conflicts', []) %}<li>{{ c }}</li>{% endfor %}</ul>
+  </div>
+  <div class="glass card">
+    <h4>🧩 Resolutions</h4>
+    <ul class="tag-list opps">{% for r in report.get('resolutions', []) %}<li>{{ r }}</li>{% endfor %}</ul>
+  </div>
+</div>
+
+<div class="glass card" style="margin-top:18px;">
+  <h4>🔮 What-If Insights</h4>
+  <ul class="tag-list findings">{% for w in report.get('what_if_insights', []) %}<li>{{ w }}</li>{% endfor %}</ul>
+  <div class="divider"></div>
+  <h4>👔 CEO Reasoning</h4>
+  <p>{{ report.get('ceo_reasoning') }}</p>
+  {% if decision.approval_note %}
+  <div class="callout info" style="margin-top:10px;"><b>Approver's note:</b> {{ decision.approval_note }}</div>
+  {% endif %}
+  <div class="divider"></div>
+  <h4>🏁 Final Conclusion</h4>
+  <p>{{ report.get('final_conclusion') }}</p>
+</div>
+
+<script>
+(function () {
+  const rows = {{ (finance.get('projection') or {}).get('rows', []) | tojson }};
+  const budget = {{ (finance.get('budget') or {}).get('items', []) | tojson }};
+  const points = {{ (risk.get('matrix') or {}).get('points', []) | tojson }};
+  const scores = {{ report.get('agent_scores', {}) | tojson }};
+
+  BR.gauge("rep-gauge", {{ report.get('strategic_score', 0) or 0 }});
+
+  BR.line("rep-projection", rows.map(r => r.year), [
+    { label: "Revenue", data: rows.map(r => r.revenue), color: BR.PALETTE.sky },
+    { label: "Profit", data: rows.map(r => r.profit), color: BR.PALETTE.mint },
+    { label: "Cumulative cash", data: rows.map(r => r.cumulative_cashflow), color: BR.PALETTE.purple, fill: false },
+  ]);
+
+  const keys = Object.keys(scores);
+  BR.radar("rep-radar", keys.map(k => k.replace("_", " ").replace(/\b\w/g, c => c.toUpperCase())),
+    [{ label: "Score", data: keys.map(k => scores[k] || 0), color: BR.PALETTE.purple }]);
+
+  BR.doughnut("rep-budget", budget.map(b => b.category), budget.map(b => b.amount), { legend: "bottom" });
+  BR.riskMatrix("rep-risk", points);
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Boardroom Agents — Meet the Team</title>
+  <meta name="description" content="Meet the seven specialized AI agents that analyze your business decisions from every perspective — Planner, Finance, Marketing, Operations, Risk, Debate, and CEO.">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+  <!-- Top Navbar -->
+  <header class="navbar">
+    <div class="container">
+      <a href="/" class="brand-wrapper">
+        <div class="brand-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2 9L12 3L22 9V11H2V9Z" fill="#18A879"/>
+            <rect x="4" y="12" width="2.5" height="7" rx="0.5" fill="#18A879"/>
+            <rect x="9" y="12" width="2.5" height="7" rx="0.5" fill="#18A879"/>
+            <rect x="13.5" y="12" width="2.5" height="7" rx="0.5" fill="#18A879"/>
+            <rect x="18" y="12" width="2.5" height="7" rx="0.5" fill="#18A879"/>
+            <path d="M2 20H22V22H2V20Z" fill="#18A879"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">AI Boardroom</span>
+          <span class="brand-subtitle">Multi-Agent Decision Intelligence</span>
+        </div>
+      </a>
+
+      <nav>
+        <ul class="nav-links">
+          <li class="nav-item"><a href="/">Home</a></li>
+          <li class="nav-item"><a href="/features">Features</a></li>
+          <li class="nav-item"><a href="/how-it-works">How It Works</a></li>
+          <li class="nav-item active"><a href="/agents">Agents</a></li>
+          <li class="nav-item"><a href="/about">About</a></li>
+          <li class="nav-item"><a href="/contact">Contact</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-actions">
+        <a href="/signin" class="btn btn-signin">Sign In</a>
+        <a href="/signup" class="btn btn-signup">Sign Up</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content" style="padding: 40px 0;">
+    <div class="container">
+      {% include "partials/agents_grid.html" %}
+    </div>
+
+    <!-- CTA Section -->
+    <section style="padding: 60px 0; background: #FFFDF9; border-top: 1px solid var(--border); margin-top: 50px;">
+      <div class="container" style="text-align:center;">
+        <h2 style="font-size:1.8rem; color:#123F3D; margin-bottom:12px;">Ready to Run Your First Boardroom?</h2>
+        <p style="color:#687572; max-width:500px; margin:0 auto 24px auto;">Let all seven agents analyze your business decision in minutes — not months.</p>
+        <a href="/signup" class="btn btn-signup" style="padding:14px 36px; font-size:1.05rem;">
+          Get Started Free &rarr;
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <span class="footer-brand-title">AI Boardroom</span>
+          <span class="footer-brand-subtitle">Multi-Agent Decision Intelligence</span>
+        </div>
+        <ul class="footer-nav">
+          <li><a href="/">Home</a></li>
+          <li><a href="/features">Features</a></li>
+          <li><a href="/how-it-works">How It Works</a></li>
+          <li><a href="/agents">Agents</a></li>
+          <li><a href="/about">About</a></li>
+          <li><a href="/contact">Contact</a></li>
+        </ul>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 AI Boardroom. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
